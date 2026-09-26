@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: landwealth-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secure_password_123
+      MYSQL_DATABASE: landwealth
+      MYSQL_USER: landwealth_user
+      MYSQL_PASSWORD: landwealth_password_123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secure_password_123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - landwealth-net
+
+  api:
+    build:
+      context: .
+      dockerfile: src/LandWealth.Api/Dockerfile
+    container_name: landwealth-api
+    restart: always
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=landwealth;User=landwealth_user;Password=landwealth_password_123;
+      - JwtSettings__SecretKey=SuperSecretKeyForLandWealthJwtTokenValidationOnlyInDev2026!
+      - JwtSettings__Issuer=LandWealth.Api
+      - JwtSettings__Audience=LandWealth.Web
+      - StorageSettings__DocumentRoot=/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - document_storage:/app/storage
+    networks:
+      - landwealth-net
+
+  web:
+    build:
+      context: src/landwealth-web
+      dockerfile: Dockerfile
+    container_name: landwealth-web
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - landwealth-net
+
+volumes:
+  mysql_data:
+  document_storage:
+
+networks:
+  landwealth-net:
+    driver: bridge

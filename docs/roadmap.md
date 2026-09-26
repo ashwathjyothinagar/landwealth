@@ -8,9 +8,9 @@ This document establishes the multi-phase engineering plan for building LandWeal
 
 | Phase | Description | Status | Quality Gate Criteria |
 |---|---|---|---|
-| **Phase 1** | **Architecture & Documentation** | **Current** | PRD, Architecture, Accounting Rules, DB Design, Roadmap, ADRs, Copilot Instructions & Prompts finalized. |
-| **Phase 2** | **Solution & Project Setup** | Pending | .NET 9 Clean Architecture projects created, Vite+React+TS initialized, Docker Compose running MySQL, builds succeed. |
-| **Phase 3** | **Domain & Database Model** | Pending | Core entities, value objects, EF Core configurations, Pomelo MySQL migrations, base seed data. |
+| **Phase 1** | **Architecture & Documentation** | **Completed** | PRD, Architecture, Accounting Rules, DB Design, Roadmap, ADRs, Copilot Instructions & Prompts finalized. |
+| **Phase 2** | **Solution & Project Setup** | **Completed** | .NET 9 Clean Architecture projects created, Vite+React+TS initialized, Docker Compose running MySQL, builds & tests succeed. |
+| **Phase 3** | **Domain & Database Model** | **Next** | Core entities, value objects, EF Core configurations, Pomelo MySQL migrations, base seed data. |
 | **Phase 4** | **Authentication & Multi-Tenancy** | Pending | JWT Auth, Argon2/BCrypt hashing, CurrentUserService, EF Core Global Query Filters verified with tests. |
 | **Phase 5** | **Properties, Parcels & Ownership** | Pending | Property CRUD, parcel subdivision logic, joint ownership validation, domain unit tests passing. |
 | **Phase 6** | **Financial Accounts** | Pending | Bank, Cash, Credit Card management, account masking, running balance calculation verified. |

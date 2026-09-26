@@ -1,0 +1,6 @@
+@LandWealth.Api_HostAddress = http://localhost:5298
+
+GET {{LandWealth.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
