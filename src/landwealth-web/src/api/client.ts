@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -22,7 +22,8 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('landwealth_token');
-      // Redirect to login if appropriate
+      localStorage.removeItem('landwealth_name');
+      window.dispatchEvent(new Event('landwealth:unauthorized'));
     }
     return Promise.reject(error);
   }

@@ -5,6 +5,12 @@
  *   formatIndianRupee(100000)     => "₹1,00,000.00"
  *   formatIndianRupee(12000000)   => "₹1,20,00,000.00"
  */
+function roundToPaise(amount: number): number {
+  const sign = amount < 0 ? -1 : 1;
+  const paise = Math.round((Math.abs(amount) + Number.EPSILON) * 100) / 100;
+  return sign * paise;
+}
+
 export function formatIndianRupee(
   amount: number | null | undefined,
   includeDecimals: boolean = true
@@ -21,7 +27,7 @@ export function formatIndianRupee(
     currency: 'INR',
     minimumFractionDigits: includeDecimals ? 2 : 0,
     maximumFractionDigits: includeDecimals ? 2 : 0,
-  }).format(absAmount);
+  }).format(roundToPaise(absAmount));
 
   return isNegative ? `-${formatted}` : formatted;
 }

@@ -21,6 +21,7 @@
 - [Accounting & Financial Rules](docs/accounting-rules.md)
 - [Database Design Specification](docs/database-design.md)
 - [Development Roadmap](docs/roadmap.md)
+- [Application usage](docs/usage.md)
 - [Architecture Decision Records (ADRs)](docs/decisions/)
   - [ADR 0001: Transaction Header & Balanced Lines Accounting Model](docs/decisions/0001-transaction-double-entry-accounting-model.md)
   - [ADR 0002: Modular Monolith & Clean Architecture](docs/decisions/0002-modular-monolith-clean-architecture.md)
@@ -34,7 +35,11 @@
 
 ## Technology Stack
 
-- **Backend**: ASP.NET Core 9 (.NET 9), Clean Architecture, Entity Framework Core 9, Pomelo MySQL.
+- **Backend**: ASP.NET Core 10 (.NET 10), Clean Architecture, Entity Framework Core 9, Pomelo MySQL.
 - **Frontend**: React, TypeScript, Vite, React Router, TanStack Query, Material UI.
 - **Database**: MySQL 8.0+ / 8.4+ (InnoDB, UTF8mb4).
 - **Testing**: xUnit, FluentAssertions, React Testing Library, Vitest.
+
+## Run locally
+
+See the [deployment runbook](docs/deployment.md). In short: start MySQL, apply the EF migration, run the API on port 5000, and run the Vite app on port 3000.

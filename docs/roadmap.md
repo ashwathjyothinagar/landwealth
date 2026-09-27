@@ -10,19 +10,19 @@ This document establishes the multi-phase engineering plan for building LandWeal
 |---|---|---|---|
 | **Phase 1** | **Architecture & Documentation** | **Completed** | PRD, Architecture, Accounting Rules, DB Design, Roadmap, ADRs, Copilot Instructions & Prompts finalized. |
 | **Phase 2** | **Solution & Project Setup** | **Completed** | .NET 9 Clean Architecture projects created, Vite+React+TS initialized, Docker Compose running MySQL, builds & tests succeed. |
-| **Phase 3** | **Domain & Database Model** | **Next** | Core entities, value objects, EF Core configurations, Pomelo MySQL migrations, base seed data. |
-| **Phase 4** | **Authentication & Multi-Tenancy** | Pending | JWT Auth, Argon2/BCrypt hashing, CurrentUserService, EF Core Global Query Filters verified with tests. |
-| **Phase 5** | **Properties, Parcels & Ownership** | Pending | Property CRUD, parcel subdivision logic, joint ownership validation, domain unit tests passing. |
-| **Phase 6** | **Financial Accounts** | Pending | Bank, Cash, Credit Card management, account masking, running balance calculation verified. |
-| **Phase 7** | **Transaction Engine** | Pending | Double-entry balanced journal lines, posting rules, immutability, reversal & adjustment handlers. |
-| **Phase 8** | **Property Cost Basis & Accounting** | Pending | CapEx vs OpEx distinction, cost basis accumulation, realized vs unrealized gain calculation engine. |
-| **Phase 9** | **Property Valuations** | Pending | Historical valuation log, government guidance value tracking, valuation vs cash independence confirmed. |
-| **Phase 10** | **Document Management** | Pending | GUID-keyed file storage, magic-byte MIME validation, path traversal defense, streaming downloads. |
-| **Phase 11** | **Reminders & Calendar** | Pending | Tax & survey deadline tracking, priority escalation, completion workflows. |
-| **Phase 12** | **Dashboard** | Pending | Liquid vs Illiquid Net worth aggregation, portfolio table, cash flow indicators, React dashboard UI. |
-| **Phase 13** | **Reports & Balance Sheet** | Pending | Comprehensive cash flow, property profitability statement, valuation timeline charts. |
-| **Phase 14** | **Security Review & Hardening** | Pending | IDOR penetration tests, SQL injection audits, token expiration checks, OWASP Top 10 checklist. |
-| **Phase 15** | **Testing, Polish & Release** | Pending | Full suite xUnit, FluentAssertions, React Testing Library, Indian Rupee localization polish. |
+| **Phase 3** | **Domain & Database Model** | **Completed** | Core entities, value objects, EF Core configurations, Pomelo MySQL migrations, base seed data. |
+| **Phase 4** | **Authentication & Multi-Tenancy** | **Completed** | JWT Auth, BCrypt hashing, CurrentUserService, EF Core Global Query Filters verified with tests. |
+| **Phase 5** | **Properties, Parcels & Ownership** | **Completed** | Property CRUD, parcel subdivision logic, joint ownership validation, domain unit tests passing. |
+| **Phase 6** | **Financial Accounts** | **Completed** | Bank, Cash, Credit Card management, account masking, running balance calculation verified. |
+| **Phase 7** | **Transaction Engine** | **Completed** | Double-entry balanced journal lines, posting rules, immutability, reversal & adjustment handlers. |
+| **Phase 8** | **Property Cost Basis & Accounting** | **Completed** | CapEx vs OpEx distinction, cost basis accumulation, realized vs unrealized gain calculation engine. |
+| **Phase 9** | **Property Valuations** | **Completed** | Historical valuation log, government guidance value tracking, valuation vs cash independence confirmed. |
+| **Phase 10** | **Document Management** | **Completed** | GUID-keyed file storage, magic-byte MIME validation, path traversal defense, streaming downloads. |
+| **Phase 11** | **Reminders & Calendar** | **Completed** | Tax & survey deadline tracking, priority escalation, completion workflows. |
+| **Phase 12** | **Dashboard** | **Completed** | Liquid vs Illiquid Net worth aggregation, portfolio table, cash flow indicators, React dashboard UI. |
+| **Phase 13** | **Reports & Balance Sheet** | **Completed** | Comprehensive cash flow, property profitability statement, valuation timeline charts. |
+| **Phase 14** | **Security Review & Hardening** | **Completed** | IDOR tests, SQL injection name round-trip, token expiration checks, path traversal defense. |
+| **Phase 15** | **Testing, Polish & Release** | **Completed** | xUnit, FluentAssertions, React Testing Library, Indian Rupee localization, deployment runbook. |
 
 ---
 
@@ -69,56 +69,60 @@ This document establishes the multi-phase engineering plan for building LandWeal
 - Manage Bank Accounts, Cash Drawers, and Credit Cards.
 - Enforce account masking (storing only last 4 digits).
 - Opening balance initialization and running balance consistency tests.
+- Account statements return a server-computed running balance after each posted line.
 - React accounts overview and card management screens.
 
 ### Phase 7: Core Transaction Engine
 - Double-entry transaction pipeline: Balanced `TransactionLines` (Debits == Credits).
 - Enforce transaction classifications: Income, Expense, Transfer, Property Purchase, Property Expense, Property Income, Property Sale.
-- Non-destructive correction model: Reversal and Adjustment workflows.
-- Frontend transaction ledger with date/property/account filters.
+- Non-destructive correction model: Reversal and Adjustment workflows. Posted entries are not deleted.
+- Frontend transaction ledger with date/property/account filters, reversal notes, and adjustments.
 
 ### Phase 8: Property Accounting & Cost Basis Engine
 - Implement cost basis aggregation:
-  - Acquisition Cost & Expenses.
-  - Capital Improvement (CapEx) basis addition.
-  - Maintenance (OpEx) separation.
-- Realized gain engine on full and partial parcel sales.
-- Pro-rata cost basis allocation logic for subdivided sales.
+  - Acquisition cost and acquisition expenses.
+  - Capital improvement additions.
+  - Maintenance tracked separately and excluded from cost basis.
+- Realized gain on full and partial sales, with pro-rata allocation across the active extent in acres.
+- A reversal removes the reversed capital cost. A valuation does not change cost basis or cash.
 
 ### Phase 9: Valuations Management
-- Valuation history registry (Guidance value vs Market value).
-- Recompute unrealized gains on valuation change without creating cash transactions.
-- Historical valuation chart component in React.
+- Valuation history keeps government guidance value separate from market estimates.
+- Unrealized gain follows the latest market estimate, and uses guidance only when no market estimate exists.
+- Recording a valuation does not create a cash transaction.
+- Historical valuation chart on the property page.
 
 ### Phase 10: Document Management System
-- Cryptographic GUID-based local/cloud file storage provider.
-- Magic-byte file header verification (PDF, PNG, JPEG).
-- Secure download controller preventing path traversal and unauthorized cross-tenant downloads.
-- React document uploader with drag-and-drop and metadata tagging.
+- Files are stored under a GUID key that is never returned to the client.
+- Magic-byte checks accept PDF, PNG, and JPEG, and reject a file whose bytes do not match the declared type.
+- Downloads are limited to the owning user. A parcel tag must belong to the same property.
+- React uploader with drag-and-drop and document type, number, date, and notes.
 
 ### Phase 11: Reminders & Alerts
-- Schedule property tax deadlines, lease expiries, and agricultural appointments.
-- Reminder statuses: Pending, Completed, Overdue.
-- Dashboard upcoming reminder notifications.
+- Schedule property tax, lease expiry, and agricultural survey dates.
+- A pending reminder past its due date is shown as overdue, and a low priority is raised to high.
+- The dashboard lists overdue reminders and those due within 30 days.
+- Completed and dismissed reminders leave that list.
 
 ### Phase 12: Executive Financial Dashboard
-- Aggregate Total Net Worth, Liquid Net Worth, Property Investment, and Unrealized Gains.
-- Real-time Property Portfolio table with one-click drill-down.
-- Monthly cash flow cards (Inflows vs Outflows).
+- Aggregate liquid net worth, property investment, unrealized gain, and total net worth.
+- Portfolio table shows type, extent, cost basis, and valuation, and opens the property.
+- Monthly inflow and outflow cards exclude transfers between accounts.
+- The latest transactions appear on the dashboard.
 
 ### Phase 13: Reports & Analytics
-- Property Profitability and Investment Statement.
-- Net Worth Balance Sheet (Assets vs Liabilities breakdown).
-- Multi-year valuation appreciation curves.
-- Export to CSV / printable format.
+- Property investment statement separates acquisition, improvements, maintenance, and income.
+- Balance sheet lists each asset and liability, and net worth is assets minus liabilities.
+- Valuation history covers multiple years and can be exported as CSV.
+- Cash-flow, profitability, and balance-sheet reports can be printed or exported.
 
 ### Phase 14: Security Hardening & Audit
-- Verification of EF Core Global Query Filters across all endpoints.
-- Path traversal and malicious upload testing.
-- Penetration testing of API endpoints against unauthorized IDs.
-- AuditLog verification for all high-risk financial events.
+- Accounts, transactions, valuations, and reminders stay hidden from another user.
+- Login and registration are rate limited, tokens must use HMAC-SHA256, and API responses send restrictive headers.
+- The audit log records account, transaction, valuation, asset, and liability changes, and a reversal is its own entry.
+- Audit rows are append-only and visible only to the user who made the change.
 
 ### Phase 15: Quality Assurance & Launch Polish
-- Complete end-to-end testing across C# and React.
-- Indian numbering system verification (`₹12,34,567.00`).
-- Documentation sync and deployment runbooks.
+- A release walk covers registration, a property purchase, valuation, dashboard, audit, and another user's 404.
+- Amounts display in Indian grouping, including `₹12,34,567.00`, and paise round from the stored decimal.
+- The deployment runbook covers local startup, containers, secrets, and the launch check.

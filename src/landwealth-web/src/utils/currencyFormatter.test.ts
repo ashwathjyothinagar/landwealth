@@ -3,6 +3,15 @@ import { formatIndianRupee, formatIndianShorthand } from './currencyFormatter';
 
 describe('currencyFormatter', () => {
   describe('formatIndianRupee', () => {
+    it('uses the Indian grouping for twelve lakh thirty-four thousand', () => {
+      expect(formatIndianRupee(1234567)).toBe('₹12,34,567.00');
+    });
+
+    it('rounds a four-decimal amount to paise', () => {
+      expect(formatIndianRupee(1234567.126)).toBe('₹12,34,567.13');
+      expect(formatIndianRupee(-1234567.126)).toBe('-₹12,34,567.13');
+    });
+
     it('should format zero correctly', () => {
       expect(formatIndianRupee(0)).toContain('0.00');
     });
