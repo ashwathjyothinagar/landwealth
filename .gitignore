@@ -26,9 +26,9 @@ appsettings.Production.json
 appsettings.*.local.json
 
 ## Storage Uploads
-uploads/
-storage/
-temp/
+/uploads/
+/storage/
+/temp/
 
 ## OS Files
 .DS_Store
