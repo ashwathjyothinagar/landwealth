@@ -173,14 +173,41 @@ public sealed class ReverseTransactionHandler(IApplicationDbContext context, ICu
     }
 }
 
-public sealed record ListTransactionsQuery(DateOnly? From, DateOnly? To, Guid? PropertyId, Guid? AccountId)
-    : IRequest<IReadOnlyList<TransactionDto>>;
+public sealed record PagedTransactions(IReadOnlyList<TransactionDto> Items, int TotalCount, int Page, int PageSize);
 
-public sealed class ListTransactionsHandler(IApplicationDbContext context) : IRequestHandler<ListTransactionsQuery, IReadOnlyList<TransactionDto>>
+public sealed record ListTransactionsQuery(DateOnly? From, DateOnly? To, Guid? PropertyId, Guid? AccountId, int Page = 1, int PageSize = 25)
+    : IRequest<PagedTransactions>;
+
+public sealed class ListTransactionsHandler(IApplicationDbContext context) : IRequestHandler<ListTransactionsQuery, PagedTransactions>
 {
-    public async Task<IReadOnlyList<TransactionDto>> Handle(ListTransactionsQuery request, CancellationToken cancellationToken)
+    public async Task<PagedTransactions> Handle(ListTransactionsQuery request, CancellationToken cancellationToken)
     {
-        var query = context.Transactions.Include(transaction => transaction.Lines).AsNoTracking().AsQueryable();
+        var page = request.Page < 1 ? 1 : request.Page;
+        var pageSize = request.PageSize is < 1 or > 100 ? 25 : request.PageSize;
+        var filtered = Filtered(context, request);
+        var total = await filtered.CountAsync(cancellationToken);
+        var ids = await filtered
+            .OrderByDescending(transaction => transaction.TransactionDate)
+            .ThenByDescending(transaction => transaction.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(transaction => transaction.Id)
+            .ToListAsync(cancellationToken);
+
+        var transactions = await context.Transactions.AsNoTracking()
+            .Include(transaction => transaction.Lines)
+            .Where(transaction => ids.Contains(transaction.Id))
+            .ToListAsync(cancellationToken);
+        var items = ids
+            .Select(id => transactions.Single(transaction => transaction.Id == id))
+            .Select(Map)
+            .ToList();
+        return new PagedTransactions(items, total, page, pageSize);
+    }
+
+    internal static IQueryable<Transaction> Filtered(IApplicationDbContext context, ListTransactionsQuery request)
+    {
+        var query = context.Transactions.AsNoTracking().AsQueryable();
         if (request.From is not null)
             query = query.Where(transaction => transaction.TransactionDate >= request.From);
         if (request.To is not null)
@@ -189,9 +216,7 @@ public sealed class ListTransactionsHandler(IApplicationDbContext context) : IRe
             query = query.Where(transaction => transaction.PropertyId == request.PropertyId);
         if (request.AccountId is not null)
             query = query.Where(transaction => transaction.Lines.Any(line => line.AccountId == request.AccountId));
-
-        var transactions = await query.OrderByDescending(transaction => transaction.TransactionDate).ToListAsync(cancellationToken);
-        return transactions.Select(Map).ToList();
+        return query;
     }
 
     internal static TransactionDto Map(Transaction transaction) => new(
@@ -200,6 +225,34 @@ public sealed class ListTransactionsHandler(IApplicationDbContext context) : IRe
         transaction.ReversedTransactionId, transaction.Notes,
         transaction.Lines.Select(line => new TransactionLineDto(
             line.Id, line.LineType, line.Amount, line.AccountId, line.PropertyId, line.CategoryId, line.Memo)).ToList());
+}
+
+public sealed record ExportTransactionsCommand(IReadOnlyList<Guid> Ids) : IRequest<IReadOnlyList<TransactionDto>>;
+
+public sealed class ExportTransactionsValidator : AbstractValidator<ExportTransactionsCommand>
+{
+    public ExportTransactionsValidator()
+    {
+        RuleFor(command => command.Ids).NotEmpty().Must(ids => ids.Count <= 500)
+            .WithMessage("Select at most 500 transactions.");
+    }
+}
+
+public sealed class ExportTransactionsHandler(IApplicationDbContext context)
+    : IRequestHandler<ExportTransactionsCommand, IReadOnlyList<TransactionDto>>
+{
+    public async Task<IReadOnlyList<TransactionDto>> Handle(ExportTransactionsCommand request, CancellationToken cancellationToken)
+    {
+        var ids = request.Ids.Distinct().ToList();
+        var transactions = await context.Transactions.AsNoTracking()
+            .Where(transaction => ids.Contains(transaction.Id))
+            .OrderByDescending(transaction => transaction.TransactionDate)
+            .ThenByDescending(transaction => transaction.Id)
+            .ToListAsync(cancellationToken);
+        if (transactions.Count == 0)
+            throw new NotFoundException("Transaction was not found.");
+        return transactions.Select(ListTransactionsHandler.Map).ToList();
+    }
 }
 
 public sealed record GetTransactionQuery(Guid Id) : IRequest<TransactionDto>;

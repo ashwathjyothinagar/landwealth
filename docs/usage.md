@@ -104,7 +104,7 @@ Every amount you post is a balanced journal entry. You enter the business amount
 | Investment | Move money from a funding account into an other-account investment. |
 | Liability payment | Pay a credit card from a bank or cash account. |
 
-Only active accounts appear in the form. Filter the list by date, property, or account.
+Only active accounts appear in the form. Filter the list by date, property, or account. The list is paged. Tick the rows you want, including rows on other pages, then choose **Export selected** to download an Excel file.
 
 Posted rows are not deleted. If an entry is wrong:
 

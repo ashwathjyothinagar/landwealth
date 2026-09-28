@@ -38,7 +38,7 @@ public class ValuationTests : IClassFixture<LandWealthApiFactory>
             }
         })).StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var transactionsBefore = await client.GetFromJsonAsync<List<JsonElement>>("/api/transactions");
+        var transactionsBefore = await client.GetFromJsonAsync<TransactionPage>("/api/transactions");
         var bankBefore = (await client.GetFromJsonAsync<AccountItem>($"/api/accounts/{bankId}"))!.CurrentBalance;
 
         (await client.PostAsJsonAsync("/api/properties/" + propertyId + "/valuations", new
@@ -57,7 +57,7 @@ public class ValuationTests : IClassFixture<LandWealthApiFactory>
         accounting.GuidanceValue.Should().Be(180000m);
         accounting.UnrealizedGain.Should().Be(250000m);
         (await client.GetFromJsonAsync<AccountItem>($"/api/accounts/{bankId}"))!.CurrentBalance.Should().Be(bankBefore);
-        (await client.GetFromJsonAsync<List<JsonElement>>("/api/transactions"))!.Should().HaveCount(transactionsBefore!.Count);
+        (await client.GetFromJsonAsync<TransactionPage>("/api/transactions"))!.TotalCount.Should().Be(transactionsBefore!.TotalCount);
 
         var history = await client.GetFromJsonAsync<List<ValuationItem>>($"/api/properties/{propertyId}/valuations");
         history!.Select(item => item.ValuationSource).Should().Equal("LocalMarketSurvey", "GovernmentGuidanceValue");
@@ -129,4 +129,5 @@ public class ValuationTests : IClassFixture<LandWealthApiFactory>
     private sealed record AccountItem(decimal CurrentBalance);
     private sealed record AccountingItem(decimal CostBasis, decimal? UnrealizedGain, decimal? GuidanceValue, decimal? MarketValue);
     private sealed record ValuationItem(string ValuationDate, decimal EstimatedValue, string ValuationSource);
+    private sealed record TransactionPage(int TotalCount);
 }

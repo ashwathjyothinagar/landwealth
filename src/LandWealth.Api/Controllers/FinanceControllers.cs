@@ -1,3 +1,4 @@
+using LandWealth.Api.Features;
 using LandWealth.Application.Features.Accounts;
 using LandWealth.Application.Features.Audit;
 using LandWealth.Application.Features.Dashboard;
@@ -60,9 +61,20 @@ public sealed class CategoriesController(ISender sender) : ControllerBase
 public sealed class TransactionsController(ISender sender) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<TransactionDto>>> List(
-        DateOnly? from, DateOnly? to, Guid? propertyId, Guid? accountId, CancellationToken cancellationToken)
-        => Ok(await sender.Send(new ListTransactionsQuery(from, to, propertyId, accountId), cancellationToken));
+    public async Task<ActionResult<PagedTransactions>> List(
+        DateOnly? from, DateOnly? to, Guid? propertyId, Guid? accountId, int page = 1, int pageSize = 25,
+        CancellationToken cancellationToken = default)
+        => Ok(await sender.Send(new ListTransactionsQuery(from, to, propertyId, accountId, page, pageSize), cancellationToken));
+
+    [HttpPost("export")]
+    public async Task<IActionResult> Export(ExportTransactionsCommand command, CancellationToken cancellationToken)
+    {
+        var transactions = await sender.Send(command, cancellationToken);
+        return File(
+            TransactionWorkbook.Build(transactions),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "transactions.xlsx");
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<TransactionDto>> Get(Guid id, CancellationToken cancellationToken)

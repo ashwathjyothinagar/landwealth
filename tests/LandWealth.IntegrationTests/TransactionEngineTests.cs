@@ -106,9 +106,18 @@ public class TransactionEngineTests : IClassFixture<LandWealthApiFactory>
         adjustment.StatusCode.Should().Be(HttpStatusCode.Created);
         (await client.GetFromJsonAsync<AccountItem>($"/api/accounts/{bankId}"))!.CurrentBalance.Should().Be(11250m);
 
-        var filtered = await client.GetFromJsonAsync<List<TransactionItem>>($"/api/transactions?accountId={bankId}&from=2026-06-01&to=2026-06-01");
-        filtered!.Should().NotBeEmpty();
-        filtered.Should().OnlyContain(item => item.TransactionDate == "2026-06-01");
+        var filtered = await client.GetFromJsonAsync<TransactionPage>($"/api/transactions?accountId={bankId}&from=2026-06-01&to=2026-06-01");
+        filtered!.Items.Should().NotBeEmpty();
+        filtered.Items.Should().OnlyContain(item => item.TransactionDate == "2026-06-01");
+
+        var page = await client.GetFromJsonAsync<TransactionPage>($"/api/transactions?page=1&pageSize=1");
+        page!.Items.Should().ContainSingle();
+        page.TotalCount.Should().BeGreaterThan(1);
+
+        var export = await client.PostAsJsonAsync("/api/transactions/export", new { ids = new[] { page.Items[0].Id } });
+        export.StatusCode.Should().Be(HttpStatusCode.OK);
+        export.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        (await export.Content.ReadAsByteArrayAsync()).Should().NotBeEmpty();
 
         var intruder = await AuthenticatedClient("ledger-other@landwealth.test");
         (await intruder.GetAsync($"/api/transactions/{expenseId}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -176,5 +185,6 @@ public class TransactionEngineTests : IClassFixture<LandWealthApiFactory>
 
     private sealed record CategoryItem(Guid Id, string Name);
     private sealed record AccountItem(decimal CurrentBalance);
-    private sealed record TransactionItem(string Status, string TransactionDate);
+    private sealed record TransactionItem(Guid Id, string Status, string TransactionDate);
+    private sealed record TransactionPage(List<TransactionItem> Items, int TotalCount);
 }
