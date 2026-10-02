@@ -1,68 +1,109 @@
 #!/usr/bin/env bash
+
 # Update an existing LandWealth server.
 # Pulls master, publishes the API, builds the web app, applies EF migrations,
-# and restarts landwealth-api. Does not change MySQL users, /etc/landwealth.env,
-# nginx, or the TLS certificate.
-#   sudo bash /opt/landwealth/src/deploy/redeploy.sh
+# and restarts landwealth-api.
+# Does not change MySQL users, /etc/landwealth.env, nginx, or the TLS certificate.
+
 set -euo pipefail
 
-REPO_DIR="/opt/landwealth/src"
-API_DIR="/opt/landwealth/api"
-WEB_DIR="${REPO_DIR}/src/landwealth-web"
-WEB_ROOT="/var/www/landwealth"
-DOCUMENT_ROOT="/var/lib/landwealth/documents"
-ENV_FILE="/etc/landwealth.env"
-
 if [[ "${EUID}" -ne 0 ]]; then
-  echo "Run this script as root."
-  exit 1
+    echo "Run this script as root."
+    exit 1
 fi
 
-if [[ ! -f "${ENV_FILE}" ]]; then
-  echo "Missing ${ENV_FILE}. Run deploy/setup.sh on a new server."
-  exit 1
+if [[ ! -f "/etc/landwealth.env" ]]; then
+    echo "Missing /etc/landwealth.env. Run deploy/setup.sh on a new server."
+    exit 1
 fi
 
-if [[ ! -d "${REPO_DIR}/.git" ]]; then
-  echo "Missing git checkout at ${REPO_DIR}."
-  exit 1
+if [[ ! -d "/opt/landwealth/src/.git" ]]; then
+    echo "Missing git checkout at /opt/landwealth/src."
+    exit 1
 fi
 
-git -C "${REPO_DIR}" pull --ff-only origin master
+echo "Pulling latest code..."
+git -C "/opt/landwealth/src" pull --ff-only origin master
 
+echo "Stopping LandWealth API..."
 systemctl stop landwealth-api || true
-rm -rf "${API_DIR}"
-dotnet publish "${REPO_DIR}/src/LandWealth.Api/LandWealth.Api.csproj" -c Release -o "${API_DIR}"
-test -f "${API_DIR}/Microsoft.OpenApi.dll"
 
-cd "${WEB_DIR}"
+echo "Publishing API..."
+rm -rf "/opt/landwealth/api"
+
+dotnet publish \
+    "/opt/landwealth/src/src/LandWealth.Api/LandWealth.Api.csproj" \
+    -c Release \
+    -o "/opt/landwealth/api"
+
+test -f "/opt/landwealth/api/Microsoft.OpenApi.dll"
+
+echo "Building web application..."
+cd "/opt/landwealth/src/src/landwealth-web"
+
 npm ci
+
 npm run build
-mkdir -p "${WEB_ROOT}" "${DOCUMENT_ROOT}"
-rm -rf "${WEB_ROOT:?}/"*
-cp -a dist/. "${WEB_ROOT}/"
 
-cd "${REPO_DIR}"
+echo "Updating web files..."
+mkdir -p "/var/www/landwealth" "/var/lib/landwealth/documents"
+
+rm -rf "/var/www/landwealth"/*
+
+cp -a dist/. "/var/www/landwealth/"
+
+echo "Loading environment..."
+cd "/opt/landwealth/src"
+
 set -a
-# shellcheck disable=SC1090
-source "${ENV_FILE}"
+source "/etc/landwealth.env"
 set +a
-dotnet tool uninstall --global dotnet-ef || true
-dotnet tool install --global dotnet-ef --version 9.0.20 --allow-roll-forward
-export PATH="${PATH}:${HOME}/.dotnet/tools"
-dotnet ef database update --project src/LandWealth.Infrastructure --startup-project src/LandWealth.Api
 
-chown -R www-data:www-data "${API_DIR}" "${WEB_ROOT}" "${DOCUMENT_ROOT}"
+echo "Installing dotnet-ef..."
+dotnet tool uninstall --global dotnet-ef || true
+
+dotnet tool install \
+    --global dotnet-ef \
+    --version 9.0.20 \
+    --allow-roll-forward
+
+export PATH="${PATH}:/root/.dotnet/tools"
+
+echo "Applying database migrations..."
+
+dotnet ef database update \
+    --project "src/LandWealth.Infrastructure" \
+    --startup-project "src/LandWealth.Api"
+
+echo "Setting permissions..."
+
+chown -R www-data:www-data \
+    "/opt/landwealth/api" \
+    "/var/www/landwealth" \
+    "/var/lib/landwealth/documents"
+
+echo "Starting LandWealth API..."
 
 systemctl daemon-reload
+
 systemctl reset-failed landwealth-api || true
+
 systemctl enable landwealth-api
+
 systemctl restart landwealth-api
+
+echo "Checking API health..."
+
 sleep 3
+
 curl -fsS http://127.0.0.1:5000/api/health
+
 echo
 
+echo "Checking nginx..."
+
 nginx -t
+
 systemctl reload nginx
 
 echo "LandWealth redeploy finished."

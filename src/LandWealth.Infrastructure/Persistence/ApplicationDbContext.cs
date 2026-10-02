@@ -30,6 +30,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<Liability> Liabilities => Set<Liability>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<MonthlyPayment> MonthlyPayments => Set<MonthlyPayment>();
+    public DbSet<MonthlyPaymentClearing> MonthlyPaymentClearings => Set<MonthlyPaymentClearing>();
 
     IQueryable<User> IApplicationDbContext.Users => Users;
     IQueryable<Property> IApplicationDbContext.Properties => Properties;
@@ -45,6 +47,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     IQueryable<Asset> IApplicationDbContext.Assets => Assets;
     IQueryable<Liability> IApplicationDbContext.Liabilities => Liabilities;
     IQueryable<AuditLog> IApplicationDbContext.AuditLogs => AuditLogs;
+    IQueryable<MonthlyPayment> IApplicationDbContext.MonthlyPayments => MonthlyPayments;
+    IQueryable<MonthlyPaymentClearing> IApplicationDbContext.MonthlyPaymentClearings => MonthlyPaymentClearings;
 
     void IApplicationDbContext.Add<TEntity>(TEntity entity) => Add(entity);
     void IApplicationDbContext.Update<TEntity>(TEntity entity) => Update(entity);
@@ -90,6 +94,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Asset>().HasQueryFilter(entity => entity.UserId == CurrentUserId && !entity.IsDeleted);
         modelBuilder.Entity<Liability>().HasQueryFilter(entity => entity.UserId == CurrentUserId && !entity.IsDeleted);
         modelBuilder.Entity<AuditLog>().HasQueryFilter(entity => entity.UserId == CurrentUserId);
+        modelBuilder.Entity<MonthlyPayment>().HasQueryFilter(entity => entity.UserId == CurrentUserId && !entity.IsDeleted);
+        modelBuilder.Entity<MonthlyPaymentClearing>().HasQueryFilter(entity => entity.UserId == CurrentUserId && !entity.IsDeleted);
     }
 }
 

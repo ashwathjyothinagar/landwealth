@@ -111,6 +111,14 @@ Posted rows are not deleted. If an entry is wrong:
 - **Reverse** on a posted row asks for a note. The reversal posts the opposite entry and restores the affected balance. A reversal itself cannot be reversed. Correct that with an adjustment.
 - **Adjustment** posts an explicit debit or credit to an account, offset by a category, and requires a reason.
 
+## Monthly payments
+
+Open **Bills**. Add each EMI or bill you clear every month: name, amount, the day it is due, the account that pays it, and an expense category. An EMI also needs the number of installments. The first month is when the set starts.
+
+Choose a month. The page lists each payment due that month, whether it is still remaining or the date it was paid, and how many EMI installments are left. The counts at the top are how many are due, paid, and remaining. The transaction table lists the payments recorded for that month.
+
+**Add transaction** on a remaining row posts an expense for the date and amount you enter and marks that month cleared. A month that is already paid cannot be recorded again. **Stop** keeps earlier months and drops the payment from later ones.
+
 ## Reminders
 
 Add a reminder with a title, optional description, due date, priority, and an optional property. Shortcuts fill the title for property tax, lease expiry, and an agricultural survey.

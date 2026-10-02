@@ -97,6 +97,12 @@ public enum TransactionLineType
     Credit
 }
 
+public enum MonthlyPaymentKind
+{
+    Bill,
+    Emi
+}
+
 public enum ValuationSource
 {
     GovernmentGuidanceValue,

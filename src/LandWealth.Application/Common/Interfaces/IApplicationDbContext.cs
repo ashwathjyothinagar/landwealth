@@ -22,6 +22,8 @@ public interface IApplicationDbContext
     IQueryable<Asset> Assets { get; }
     IQueryable<Liability> Liabilities { get; }
     IQueryable<AuditLog> AuditLogs { get; }
+    IQueryable<MonthlyPayment> MonthlyPayments { get; }
+    IQueryable<MonthlyPaymentClearing> MonthlyPaymentClearings { get; }
 
     void Add<TEntity>(TEntity entity) where TEntity : class;
     void Update<TEntity>(TEntity entity) where TEntity : class;

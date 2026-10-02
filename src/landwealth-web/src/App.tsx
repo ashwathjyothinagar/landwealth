@@ -12,6 +12,7 @@ import { PropertyDetailPage } from './features/properties/PropertyDetailPage';
 import { AccountsPage } from './features/accounts/AccountsPage';
 import { AccountDetailPage } from './features/accounts/AccountDetailPage';
 import { TransactionsPage } from './features/transactions/TransactionsPage';
+import { MonthlyPaymentsPage } from './features/monthlyPayments/MonthlyPaymentsPage';
 import { RemindersPage } from './features/reminders/RemindersPage';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { AuditPage } from './features/audit/AuditPage';
@@ -42,6 +43,7 @@ const App: React.FC = () => (
               <Route path="/accounts" element={<AccountsPage />} />
               <Route path="/accounts/:id" element={<AccountDetailPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />
+              <Route path="/monthly-payments" element={<MonthlyPaymentsPage />} />
               <Route path="/reminders" element={<RemindersPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/audit" element={<AuditPage />} />

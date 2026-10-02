@@ -1,5 +1,6 @@
 using LandWealth.Api.Features;
 using LandWealth.Application.Features.Accounts;
+using LandWealth.Application.Features.MonthlyPayments;
 using LandWealth.Application.Features.Audit;
 using LandWealth.Application.Features.Dashboard;
 using LandWealth.Application.Features.Documents;
@@ -113,6 +114,41 @@ public sealed class DocumentsController(ISender sender) : ControllerBase
         var download = await sender.Send(new DownloadDocumentQuery(id), cancellationToken);
         var fileName = Path.GetFileName(download.Metadata.OriginalFileName);
         return File(download.Content, download.Metadata.ContentType, fileName);
+    }
+}
+
+[ApiController]
+[Authorize]
+[Route("api/monthly-payments")]
+public sealed class MonthlyPaymentsController(ISender sender) : ControllerBase
+{
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<MonthlyPaymentDto>>> List(CancellationToken cancellationToken)
+        => Ok(await sender.Send(new ListMonthlyPaymentsQuery(), cancellationToken));
+
+    [HttpGet("month")]
+    public async Task<ActionResult<MonthlyPaymentMonthDto>> Month(int year, int month, CancellationToken cancellationToken)
+        => Ok(await sender.Send(new GetMonthlyPaymentMonthQuery(year, month), cancellationToken));
+
+    [HttpPost]
+    public async Task<ActionResult> Create(CreateMonthlyPaymentCommand command, CancellationToken cancellationToken)
+    {
+        var id = await sender.Send(command, cancellationToken);
+        return Created($"/api/monthly-payments/{id}", new { id });
+    }
+
+    [HttpPost("{id:guid}/stop")]
+    public async Task<IActionResult> Stop(Guid id, CancellationToken cancellationToken)
+    {
+        await sender.Send(new StopMonthlyPaymentCommand(id), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/payments")]
+    public async Task<ActionResult> Record(Guid id, RecordMonthlyPaymentCommand command, CancellationToken cancellationToken)
+    {
+        var transactionId = await sender.Send(command with { MonthlyPaymentId = id }, cancellationToken);
+        return Created($"/api/transactions/{transactionId}", new { id = transactionId });
     }
 }
 
